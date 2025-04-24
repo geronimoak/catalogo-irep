@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catálogo Inteligente - I-REP</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 20px; background: #f9f9f9; }
+    select, input, button { margin: 5px; padding: 6px; font-size: 1rem; }
+    .producto { background: white; border-radius: 8px; padding: 12px; margin: 10px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    button { background: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    #resultados { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Catálogo Inteligente I-REP</h1>
+  <label>Buscar por texto o código:</label>
+  <input type="text" id="busqueda" placeholder="Ej: pastillas corsa 1.4 o 111SP170H" style="width: 70%;">
+  <button onclick="buscar()">Buscar</button>
+  <div id="estado"></div>
+  <div id="resultados"></div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwkK-gKWQSO-QCw17EPXesAd4ChHXylnu7l2KEr17BEgkMOEippDmVfCx1S97WLklM/exec'; // ← reemplazar con tu URL
+
+    async function buscar() {
+      const query = document.getElementById('busqueda').value.trim();
+      const estado = document.getElementById('estado');
+      const resultados = document.getElementById('resultados');
+      if (!query) return alert('Ingrese una búsqueda.');
+      estado.textContent = '⏳ Consultando servidor...';
+      resultados.innerHTML = '';
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ accion: 'openai', query }),
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        estado.textContent = '';
+
+        if (data.error) {
+          resultados.innerHTML = `<div style="color: red;">❌ ${data.error}</div>`;
+          return;
+        }
+
+        if (data.text) {
+          const bloques = data.text.split('\n\n');
+          bloques.forEach(b => {
+            const div = document.createElement('div');
+            div.className = 'producto';
+            div.textContent = b;
+            resultados.appendChild(div);
+          });
+        } else if (data.results?.length) {
+          data.results.slice(0, 10).forEach(it => {
+            const div = document.createElement('div');
+            div.className = 'producto';
+            div.innerHTML = `
+              <strong>${it.descripcion}</strong><br>
+              <em>${it.marca || ''} - ${it.modelo || ''}</em><br>
+              <small>${it.rubro || ''}</small><br>
+              <span style='font-size: small;'>Código: ${it.codigo}</span>
+            `;
+            resultados.appendChild(div);
+          });
+        } else {
+          resultados.innerHTML = '<em>No se encontraron coincidencias.</em>';
+        }
+      } catch (err) {
+        estado.textContent = '';
+        resultados.innerHTML = `<div style="color:red;">Error de conexión: ${err.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
