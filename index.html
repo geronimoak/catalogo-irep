@@ -32,11 +32,8 @@
       resultados.innerHTML = '';
 
       try {
-        const res = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify({ accion: 'openai', query }),
-          headers: { 'Content-Type': 'application/json' }
-        });
+        const url = SCRIPT_URL + '?accion=openai&query=' + encodeURIComponent(query);
+        const res = await fetch(url);
         const data = await res.json();
         estado.textContent = '';
 
